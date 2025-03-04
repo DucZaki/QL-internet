@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="QL-internet:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/QL_internet_jar</output-path>
+    <root id="archive" name="QL-internet.jar">
+      <element id="module-output" name="QL-internet" />
+      <element id="extracted-dir" path="$USER_HOME$/Downloads/mysql-connector-j-9.2.0/mysql-connector-j-9.2.0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
