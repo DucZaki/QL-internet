@@ -45,7 +45,7 @@ public class MainFrame extends JFrame {
         hienThiPanel(panel, new JLabel("Chào mừng đến với phần mềm Quản lý Quán Internet", SwingConstants.CENTER));
     }
 
-    // Phương thức hiển thị giao diện con trong panel chính
+    // Phương thức hiển thị giao diện con trong panel chínhQ
     private void hienThiPanel(JPanel panel, JComponent thanhPhan) {
         panel.removeAll();
         panel.add(thanhPhan, BorderLayout.CENTER);
