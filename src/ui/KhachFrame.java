@@ -4,6 +4,8 @@ import database.DatabaseConnection;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.*;
@@ -16,7 +18,6 @@ public class KhachFrame extends JPanel {
 
     public KhachFrame() {
         setLayout(new BorderLayout());
-
         model = new DefaultTableModel(new String[]{"ID", "Tên", "Số Điện Thoại", "Máy", "Số Dư"}, 0) {
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -24,28 +25,21 @@ public class KhachFrame extends JPanel {
         };
         table = new JTable(model);
         add(new JScrollPane(table), BorderLayout.CENTER);
-
         JPanel panelInput = new JPanel(new GridLayout(5, 2));
         panelInput.add(new JLabel("Tên khách:"));
         txtTen = new JTextField();
         panelInput.add(txtTen);
-
         panelInput.add(new JLabel("Số điện thoại:"));
         txtSoDienThoai = new JTextField();
         panelInput.add(txtSoDienThoai);
-
         panelInput.add(new JLabel("Mật khẩu:"));
         txtMatKhau = new JTextField();
         panelInput.add(txtMatKhau);
-
-
         btnThem = new JButton("Thêm khách");
         btnNapTien = new JButton("Nạp tiền");
         panelInput.add(btnThem);
         panelInput.add(btnNapTien);
-
         add(panelInput, BorderLayout.SOUTH);
-
         JPanel panelSearch = new JPanel(new BorderLayout());
         txtTimKiem = new JTextField();
         btnTimKiem = new JButton("Tìm kiếm");
@@ -53,11 +47,10 @@ public class KhachFrame extends JPanel {
         panelSearch.add(txtTimKiem, BorderLayout.CENTER);
         panelSearch.add(btnTimKiem, BorderLayout.EAST);
         add(panelSearch, BorderLayout.NORTH);
-
+        setupKeyListeners();
         btnThem.addActionListener(e -> themKhach());
         btnNapTien.addActionListener(e -> napTien());
         btnTimKiem.addActionListener(e -> timKiemKhach());
-
         // Thêm sự kiện khi nhấp vào dòng trong bảng
         table.addMouseListener(new MouseAdapter() {
             @Override
@@ -67,18 +60,53 @@ public class KhachFrame extends JPanel {
                 }
             }
         });
-
         loadKhach();
     }
+    // Thiết lập key listeners cho các trường nhập liệu
+    private void setupKeyListeners() {
+        // Key listener cho ô tìm kiếm
+        txtTimKiem.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    timKiemKhach();
+                }
+            }
+        });
 
+        // Key listener cho ô mật khẩu (khi nhấn Enter sẽ thêm khách)
+        txtMatKhau.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    themKhach();
+                }
+            }
+        });
+        txtSoDienThoai.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    txtMatKhau.requestFocus();
+                }
+            }
+        });
+        // Key listener cho ô tên (focus sang ô số điện thoại)
+        txtTen.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    txtSoDienThoai.requestFocus();
+                }
+            }
+        });
+    }
     // Phương thức xử lý khi click vào khách hàng
     private void xuLyClickKhach() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) return;
-
         int idKhach = (int) model.getValueAt(selectedRow, 0);
         String tenKhach = (String) model.getValueAt(selectedRow, 1);
-
         String[] options = {"Chỉnh sửa khách", "Xóa khách", "Hủy"};
         int choice = JOptionPane.showOptionDialog(
                 this,
@@ -90,7 +118,6 @@ public class KhachFrame extends JPanel {
                 options,
                 options[0]
         );
-
         switch (choice) {
             case 0: // Chỉnh sửa khách
                 chinhSuaKhach(idKhach);
@@ -102,22 +129,18 @@ public class KhachFrame extends JPanel {
                 break;
         }
     }
-
     // Phương thức chỉnh sửa thông tin khách hàng
     private void chinhSuaKhach(int idKhach) {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT * FROM khach WHERE id = ?")) {
             stmt.setInt(1, idKhach);
             ResultSet rs = stmt.executeQuery();
-
             if (rs.next()) {
                 String tenHienTai = rs.getString("ten");
                 String soDienThoaiHienTai = rs.getString("so_dien_thoai");
-
                 JTextField txtSuaTen = new JTextField(tenHienTai);
                 JTextField txtSuaSoDienThoai = new JTextField(soDienThoaiHienTai);
                 JTextField txtSuaMatKhau = new JTextField();
-
                 JPanel panel = new JPanel(new GridLayout(3, 2));
                 panel.add(new JLabel("Tên:"));
                 panel.add(txtSuaTen);
@@ -125,46 +148,27 @@ public class KhachFrame extends JPanel {
                 panel.add(txtSuaSoDienThoai);
                 panel.add(new JLabel("Mật khẩu mới (để trống nếu không đổi):"));
                 panel.add(txtSuaMatKhau);
-
+                // Thêm key listener để có thể nhấn Enter để lưu
+                KeyAdapter enterKeyListener = new KeyAdapter() {
+                    @Override
+                    public void keyPressed(KeyEvent e) {
+                        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                            // Mô phỏng người dùng đã nhấn OK
+                            luuChinhSuaKhach(idKhach, txtSuaTen.getText().trim(),
+                                    txtSuaSoDienThoai.getText().trim(),
+                                    txtSuaMatKhau.getText().trim());
+                        }
+                    }
+                };
+                txtSuaTen.addKeyListener(enterKeyListener);
+                txtSuaSoDienThoai.addKeyListener(enterKeyListener);
+                txtSuaMatKhau.addKeyListener(enterKeyListener);
                 int result = JOptionPane.showConfirmDialog(this, panel, "Chỉnh sửa thông tin khách hàng",
                         JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
                 if (result == JOptionPane.OK_OPTION) {
-                    String tenMoi = txtSuaTen.getText().trim();
-                    String soDienThoaiMoi = txtSuaSoDienThoai.getText().trim();
-                    String matKhauMoi = txtSuaMatKhau.getText().trim();
-
-                    if (tenMoi.isEmpty() || soDienThoaiMoi.isEmpty()) {
-                        JOptionPane.showMessageDialog(this, "Tên và số điện thoại không được để trống!");
-                        return;
-                    }
-
-                    if (!soDienThoaiMoi.matches("^0\\d{9}$")) {
-                        JOptionPane.showMessageDialog(this, "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0!");
-                        return;
-                    }
-
-                    String sql;
-                    PreparedStatement updateStmt;
-
-                    if (matKhauMoi.isEmpty()) {
-                        sql = "UPDATE khach SET ten = ?, so_dien_thoai = ? WHERE id = ?";
-                        updateStmt = conn.prepareStatement(sql);
-                        updateStmt.setString(1, tenMoi);
-                        updateStmt.setString(2, soDienThoaiMoi);
-                        updateStmt.setInt(3, idKhach);
-                    } else {
-                        sql = "UPDATE khach SET ten = ?, so_dien_thoai = ?, mat_khau = ? WHERE id = ?";
-                        updateStmt = conn.prepareStatement(sql);
-                        updateStmt.setString(1, tenMoi);
-                        updateStmt.setString(2, soDienThoaiMoi);
-                        updateStmt.setString(3, matKhauMoi);
-                        updateStmt.setInt(4, idKhach);
-                    }
-
-                    updateStmt.executeUpdate();
-                    JOptionPane.showMessageDialog(this, "Cập nhật thông tin khách hàng thành công!");
-                    loadKhach();
+                    luuChinhSuaKhach(idKhach, txtSuaTen.getText().trim(),
+                            txtSuaSoDienThoai.getText().trim(),
+                            txtSuaMatKhau.getText().trim());
                 }
             }
         } catch (SQLException e) {
@@ -172,7 +176,40 @@ public class KhachFrame extends JPanel {
             JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật thông tin khách hàng: " + e.getMessage());
         }
     }
-
+    private void luuChinhSuaKhach(int idKhach, String tenMoi, String soDienThoaiMoi, String matKhauMoi) {
+        if (tenMoi.isEmpty() || soDienThoaiMoi.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tên và số điện thoại không được để trống!");
+            return;
+        }
+        if (!soDienThoaiMoi.matches("^0\\d{9}$")) {
+            JOptionPane.showMessageDialog(this, "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0!");
+            return;
+        }
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql;
+            PreparedStatement updateStmt;
+            if (matKhauMoi.isEmpty()) {
+                sql = "UPDATE khach SET ten = ?, so_dien_thoai = ? WHERE id = ?";
+                updateStmt = conn.prepareStatement(sql);
+                updateStmt.setString(1, tenMoi);
+                updateStmt.setString(2, soDienThoaiMoi);
+                updateStmt.setInt(3, idKhach);
+            } else {
+                sql = "UPDATE khach SET ten = ?, so_dien_thoai = ?, mat_khau = ? WHERE id = ?";
+                updateStmt = conn.prepareStatement(sql);
+                updateStmt.setString(1, tenMoi);
+                updateStmt.setString(2, soDienThoaiMoi);
+                updateStmt.setString(3, matKhauMoi);
+                updateStmt.setInt(4, idKhach);
+            }
+            updateStmt.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Cập nhật thông tin khách hàng thành công!");
+            loadKhach();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật thông tin khách hàng: " + e.getMessage());
+        }
+    }
     // Phương thức xóa khách hàng
     private void xoaKhach(int idKhach, String tenKhach) {
         int confirm = JOptionPane.showConfirmDialog(
@@ -181,7 +218,6 @@ public class KhachFrame extends JPanel {
                 "Xác nhận xóa",
                 JOptionPane.YES_NO_OPTION
         );
-
         if (confirm == JOptionPane.YES_OPTION) {
             try (Connection conn = DatabaseConnection.getConnection()) {
                 // Kiểm tra xem khách có đang sử dụng máy không
@@ -194,13 +230,11 @@ public class KhachFrame extends JPanel {
                         return;
                     }
                 }
-
                 // Xóa lịch sử nạp tiền của khách
                 try (PreparedStatement deleteHistoryStmt = conn.prepareStatement("DELETE FROM nap_tien WHERE id_khach = ?")) {
                     deleteHistoryStmt.setInt(1, idKhach);
                     deleteHistoryStmt.executeUpdate();
                 }
-
                 // Xóa khách
                 try (PreparedStatement deleteStmt = conn.prepareStatement("DELETE FROM khach WHERE id = ?")) {
                     deleteStmt.setInt(1, idKhach);
@@ -218,25 +252,20 @@ public class KhachFrame extends JPanel {
             }
         }
     }
-
     private void themKhach() {
         String ten = txtTen.getText().trim();
         String soDienThoai = txtSoDienThoai.getText().trim();
         String matKhau = txtMatKhau.getText().trim();
-
         if (ten.isEmpty() || soDienThoai.isEmpty() || matKhau.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!");
             return;
         }
-
         if (!soDienThoai.matches("^0\\d{9}$")) {
             JOptionPane.showMessageDialog(this, "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0!");
             return;
         }
-
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement checkStmt = conn.prepareStatement("SELECT COUNT(*) FROM khach WHERE so_dien_thoai = ? OR ten = ?")) {
-
             checkStmt.setString(1, soDienThoai);
             checkStmt.setString(2, ten);
             ResultSet rs = checkStmt.executeQuery();
@@ -244,7 +273,6 @@ public class KhachFrame extends JPanel {
                 JOptionPane.showMessageDialog(this, "Tên hoặc số điện thoại đã tồn tại! Vui lòng nhập thông tin khác.");
                 return;
             }
-
             String query = "INSERT INTO khach (ten, so_dien_thoai, mat_khau, so_du) VALUES (?, ?, ?, 0)";
             try (PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setString(1, ten);
@@ -252,6 +280,13 @@ public class KhachFrame extends JPanel {
                 stmt.setString(3, matKhau);
                 stmt.executeUpdate();
                 JOptionPane.showMessageDialog(this, "Thêm khách thành công!");
+
+                // Xóa thông tin đã nhập và đặt con trỏ về ô nhập tên
+                txtTen.setText("");
+                txtSoDienThoai.setText("");
+                txtMatKhau.setText("");
+                txtTen.requestFocus();
+
                 loadKhach();
             }
         } catch (SQLException e) {
@@ -259,14 +294,12 @@ public class KhachFrame extends JPanel {
             JOptionPane.showMessageDialog(this, "Lỗi khi thêm khách: " + e.getMessage());
         }
     }
-
     private void napTien() {
         String tenKhach = JOptionPane.showInputDialog(this, "Nhập tên khách hàng:");
         if (tenKhach == null || tenKhach.trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập tên khách hàng!");
             return;
         }
-
         String soTienStr = JOptionPane.showInputDialog(this, "Nhập số tiền cần nạp:");
         int soTienNap;
         try {
@@ -279,10 +312,8 @@ public class KhachFrame extends JPanel {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập số tiền hợp lệ!");
             return;
         }
-
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
-
             // Kiểm tra khách có tồn tại không
             int idKhach = -1;
             int soDuHienTai = 0;
@@ -297,7 +328,6 @@ public class KhachFrame extends JPanel {
                     return;
                 }
             }
-
             // Cập nhật số dư
             int soDuMoi = soDuHienTai + soTienNap;
             try (PreparedStatement stmt = conn.prepareStatement("UPDATE khach SET so_du = ? WHERE id = ?")) {
@@ -305,14 +335,12 @@ public class KhachFrame extends JPanel {
                 stmt.setInt(2, idKhach);
                 stmt.executeUpdate();
             }
-
             // Ghi vào lịch sử nạp tiền
             try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO nap_tien (id_khach, so_tien, thoi_gian) VALUES (?, ?, NOW())")) {
                 stmt.setInt(1, idKhach);
                 stmt.setInt(2, soTienNap);
                 stmt.executeUpdate();
             }
-
             conn.commit();
             JOptionPane.showMessageDialog(this, "Nạp tiền thành công! Số dư mới: " + soDuMoi + " VNĐ");
             loadKhach(); // Cập nhật lại bảng
@@ -321,31 +349,24 @@ public class KhachFrame extends JPanel {
             JOptionPane.showMessageDialog(this, "Lỗi khi nạp tiền: " + e.getMessage());
         }
     }
-
-
-
     private void timKiemKhach() {
         String keyword = txtTimKiem.getText().trim();
         if (keyword.isEmpty()) {
             loadKhach();
             return;
         }
-
         model.setRowCount(0);
         String query = "SELECT k.id, k.ten, k.so_dien_thoai, COALESCE(m.id, 'Chưa gán') AS may_id, k.so_du " +
                 "FROM khach k LEFT JOIN may m ON k.id = m.id_khach " +
                 "WHERE k.id = ? OR k.ten LIKE ?";
-
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-
             try {
                 int id = Integer.parseInt(keyword);
                 stmt.setInt(1, id);
             } catch (NumberFormatException e) {
                 stmt.setInt(1, -1); // Giá trị không hợp lệ để tránh lỗi
             }
-
             stmt.setString(2, "%" + keyword + "%");
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -355,8 +376,6 @@ public class KhachFrame extends JPanel {
             e.printStackTrace();
         }
     }
-
-
     private void loadKhach() {
         model.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection();

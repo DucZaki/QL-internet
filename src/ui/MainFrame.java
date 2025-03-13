@@ -30,7 +30,6 @@ public class MainFrame extends JFrame {
         JPanel panelChinh = new JPanel(new BorderLayout());
         add(panelChinh, BorderLayout.CENTER);
         hienThiManHinhChao(panelChinh);
-
         // Thiết lập sự kiện khi nhấn vào menu
         menuMay.addActionListener(e -> hienThiPanel(panelChinh, new MayFrame()));
         menuKhach.addActionListener(e -> hienThiPanel(panelChinh, new KhachFrame()));
@@ -39,21 +38,16 @@ public class MainFrame extends JFrame {
 
         setVisible(true);
     }
-
-    // Hiển thị màn hình chào mừng
     private void hienThiManHinhChao(JPanel panel) {
         hienThiPanel(panel, new JLabel("Chào mừng đến với phần mềm Quản lý Quán Internet", SwingConstants.CENTER));
     }
-
-    // Phương thức hiển thị giao diện con trong panel chínhQ
     private void hienThiPanel(JPanel panel, JComponent thanhPhan) {
         panel.removeAll();
         panel.add(thanhPhan, BorderLayout.CENTER);
         panel.revalidate();
         panel.repaint();
     }
-
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(MainFrame::new);
+        SwingUtilities.invokeLater(LoginFrame::new);
     }
 }

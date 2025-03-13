@@ -12,11 +12,9 @@ import java.util.TimerTask;
 public class MayFrame extends JPanel {
     private JButton[] nutMay;
     private Timer dongHo;
-
     public MayFrame() {
         setLayout(new GridLayout(6, 5, 10, 10));
         nutMay = new JButton[30];
-
         for (int i = 0; i < 30; i++) {
             int mayId = i + 1;
             nutMay[i] = new JButton("Máy " + mayId);
@@ -38,7 +36,6 @@ public class MayFrame extends JPanel {
         taiTrangThaiMay();
         batDongHo();
     }
-
     private void xuLyClickMay(int mayId) {
         // Kiểm tra trạng thái hiện tại của máy
         try (Connection ketNoi = DatabaseConnection.getConnection();
@@ -65,7 +62,6 @@ public class MayFrame extends JPanel {
                         xoaKhachKhoiMay(mayId);
                     }
                 } else {
-                    // Máy đang trống, thêm khách mới
                     moHopThoaiThemKhach(mayId);
                 }
             }
@@ -74,7 +70,6 @@ public class MayFrame extends JPanel {
             JOptionPane.showMessageDialog(this, "Lỗi khi kiểm tra trạng thái máy: " + e.getMessage());
         }
     }
-
     private String layTenKhach(int idKhach) {
         try (Connection ketNoi = DatabaseConnection.getConnection();
              PreparedStatement stmt = ketNoi.prepareStatement("SELECT ten FROM khach WHERE id = ?")) {
@@ -88,7 +83,6 @@ public class MayFrame extends JPanel {
         }
         return "Không xác định";
     }
-
     private void xoaKhachKhoiMay(int mayId) {
         try (Connection ketNoi = DatabaseConnection.getConnection();
              PreparedStatement stmt = ketNoi.prepareStatement("UPDATE may SET trang_thai = 'trong', id_khach = NULL WHERE id = ?")) {
@@ -101,14 +95,12 @@ public class MayFrame extends JPanel {
             JOptionPane.showMessageDialog(this, "Lỗi khi xóa khách khỏi máy: " + e.getMessage());
         }
     }
-
     private void moHopThoaiThemKhach(int mayId) {
         String tenKhach = JOptionPane.showInputDialog(this, "Nhập tên khách hàng:");
         if (tenKhach != null && !tenKhach.trim().isEmpty()) {
             themKhachVaoMay(mayId, tenKhach);
         }
     }
-
     private void themKhachVaoMay(int mayId, String tenKhach) {
         try (Connection ketNoi = DatabaseConnection.getConnection()) {
             // Kiểm tra xem khách có tồn tại chưa
@@ -119,7 +111,6 @@ public class MayFrame extends JPanel {
                 if (ketQua.next()) {
                     idKhach = ketQua.getInt("id");
                 } else {
-                    // Thêm khách mới nếu chưa tồn tại
                     try (PreparedStatement themKhach = ketNoi.prepareStatement(
                             "INSERT INTO khach (ten, so_du) VALUES (?, 12000)", Statement.RETURN_GENERATED_KEYS)) {
                         themKhach.setString(1, tenKhach);
@@ -131,8 +122,6 @@ public class MayFrame extends JPanel {
                     }
                 }
             }
-
-            // Kiểm tra xem khách đã đang sử dụng máy khác không
             if (idKhach != -1) {
                 try (PreparedStatement kiemTraMay = ketNoi.prepareStatement(
                         "SELECT id FROM may WHERE id_khach = ?")) {
@@ -145,7 +134,6 @@ public class MayFrame extends JPanel {
                         return;
                     }
                 }
-
                 // Cập nhật máy với khách hàng mới
                 try (PreparedStatement capNhatMay = ketNoi.prepareStatement(
                         "UPDATE may SET trang_thai = 'dang_su_dung', id_khach = ? WHERE id = ?")) {
@@ -156,13 +144,11 @@ public class MayFrame extends JPanel {
                 }
                 taiTrangThaiMay();
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi: " + e.getMessage());
         }
     }
-
     private void taiTrangThaiMay() {
         try (Connection ketNoi = DatabaseConnection.getConnection();
              Statement lenh = ketNoi.createStatement();
@@ -170,7 +156,6 @@ public class MayFrame extends JPanel {
             while (ketQua.next()) {
                 int id = ketQua.getInt("id") - 1;
                 String trangThai = ketQua.getString("trang_thai");
-
                 if ("dang_su_dung".equals(trangThai)) {
                     nutMay[id].setBackground(Color.RED);
                     nutMay[id].setForeground(Color.WHITE);
@@ -178,8 +163,6 @@ public class MayFrame extends JPanel {
                     nutMay[id].setBackground(Color.GREEN);
                     nutMay[id].setForeground(Color.BLACK);
                 }
-
-                // Đảm bảo hiển thị màu sắc đúng trên mọi hệ điều hành
                 nutMay[id].setOpaque(true);
                 nutMay[id].setBorderPainted(false);
                 nutMay[id].revalidate();
@@ -189,7 +172,6 @@ public class MayFrame extends JPanel {
             e.printStackTrace();
         }
     }
-
     private void batDongHo() {
         dongHo = new Timer();
         dongHo.schedule(new TimerTask() {
@@ -200,7 +182,6 @@ public class MayFrame extends JPanel {
             }
         }, 0, 60000);
     }
-
     private void capNhatThoiGianSuDung() {
         try (Connection ketNoi = DatabaseConnection.getConnection();
              Statement lenh = ketNoi.createStatement();
